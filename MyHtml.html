@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<!--
+  MyHtml Editor — AI-assisted local HTML visual editor
+  Inspired by / based on htmltool2 (https://github.com/caoxianqi/htmltool2) by caoxianqi, MIT License
+  See README.md, README_EN.md, and THIRD_PARTY_NOTICES.md for details.
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyHtml</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-soft: #dbeafe;
+      --sky: #0ea5e9;
+      --surface: #111827;
+      --surface-raised: #1f2937;
+      --border: #374151;
+      --border-light: #4b5563;
+      --bg: #030712;
+      --text: #f9fafb;
+      --text-secondary: #d1d5db;
+      --text-muted: #9ca3af;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-xs: 5px;
+      --radius-full: 9999px;
+      /* Semantic z-index */
+      --z-base: 1;
+      --z-header: 100;
+      --z-overlay: 200;
+      --z-floating: 300;
+      --z-panel: 400;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* ========== Header ========== */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: var(--z-header);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.3px;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .logo-icon {
+      width: 30px;
+      height: 30px;
+      background: var(--blue);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .logo-text {
+      color: var(--text);
+    }
+
+    .header-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .status-pill.modified {
+      border-color: var(--sky);
+      color: var(--sky);
+    }
+
+    .status-pill.modified .status-dot {
+      background: var(--sky);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    /* ========== Buttons ========== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 6px 12px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--border);
+      border-color: var(--border-light);
+      color: var(--text);
+    }
+
+    .btn:active:not(:disabled) {
+      background: var(--border-light);
+    }
+
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--blue-hover);
+      border-color: var(--blue-hover);
+      color: white;
+    }
+
+    .btn-icon {
+      padding: 6px;
+      min-width: 32px;
+      height: 32px;
+    }
+
+    .btn-group {
+      display: flex;
+    }
+
+    .btn-group .btn {
+      border-radius: 0;
+    }
+
+    .btn-group .btn:first-child {
+      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    }
+
+    .btn-group .btn:last-child {
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .btn-group .btn + .btn {
+      border-left: none;
+    }
+
+    /* ========== Toggle Switch ========== */
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px 3px 3px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .toggle-group:hover {
+      border-color: var(--border-light);
+    }
+
+    .toggle-group.active {
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .toggle-group:has(input:disabled) {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .toggle-track {
+      width: 28px;
+      height: 16px;
+      background: var(--border);
+      border-radius: var(--radius-full);
+      position: relative;
+      transition: background 0.15s;
+    }
+
+    .toggle-group.active .toggle-track {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .toggle-thumb {
+      width: 12px;
+      height: 12px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.15s ease-out;
+    }
+
+    .toggle-group.active .toggle-thumb {
+      transform: translateX(12px);
+    }
+
+    .toggle-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .toggle-group.active .toggle-label {
+      color: white;
+    }
+
+    .toggle-group input {
+      display: none;
+    }
+
+    /* ========== Canvas Area ========== */
+    .canvas-wrapper {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      padding: 8px;
+    }
+
+    .canvas {
+      flex: 1;
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .canvas.drag-over::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 2px dashed var(--blue);
+      border-radius: calc(var(--radius) - 4px);
+      background: rgba(37, 99, 235, 0.05);
+      pointer-events: none;
+      z-index: var(--z-overlay);
+    }
+
+    /* ========== Placeholder ========== */
+    .placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      pointer-events: none;
+    }
+
+    .placeholder-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+
+    .placeholder-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .placeholder-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 320px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .placeholder-hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ========== Viewer Iframe ========== */
+    iframe#viewer {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: white;
+      display: none;
+    }
+
+    iframe#viewer.loaded {
+      display: block;
+    }
+
+    /* ========== Overlays ========== */
+    .overlay {
+      position: fixed;
+      pointer-events: none;
+      z-index: var(--z-overlay);
+      display: none;
+      border-radius: 3px;
+      transition: all 0.08s ease-out;
+    }
+
+    .overlay.visible {
+      display: block;
+    }
+
+    #hover-overlay {
+      border: 2px solid var(--sky);
+      background: rgba(14, 165, 233, 0.08);
+    }
+
+    #selected-overlay {
+      border: 2px solid var(--blue);
+      background: rgba(37, 99, 235, 0.08);
+    }
+
+    /* ========== Color Panel ========== */
+    #color-panel {
+      position: fixed;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      width: 264px;
+      z-index: var(--z-panel);
+      animation: panelIn 0.15s ease-out;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+    }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #color-panel[hidden] {
+      display: none;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .element-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 7px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      font-size: 11px;
+      font-family: 'SF Mono', Menlo, monospace;
+      color: var(--sky);
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .panel-close {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      border-radius: var(--radius-xs);
+      transition: color 0.1s, background 0.1s;
+    }
+
+    .panel-close:hover {
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .panel-section {
+      margin-bottom: 14px;
+    }
+
+    .panel-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .color-input-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .color-swatch-input {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      cursor: pointer;
+      padding: 2px;
+      background: transparent;
+      transition: border-color 0.1s;
+    }
+
+    .color-swatch-input:hover {
+      border-color: var(--border-light);
+    }
+
+    .color-text-input {
+      flex: 1;
+      padding: 6px 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 12px;
+      color: var(--text);
+      transition: border-color 0.1s;
+    }
+
+    .color-text-input:focus {
+      outline: none;
+      border-color: var(--blue);
+    }
+
+    .btn-clear {
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: color 0.1s, border-color 0.1s;
+    }
+
+    .btn-clear:hover {
+      border-color: var(--border-light);
+      color: var(--text);
+    }
+
+    /* ========== Preset Colors ========== */
+    .preset-colors {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+    }
+
+    .preset-color {
+      aspect-ratio: 1;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.1s;
+    }
+
+    .preset-color:hover {
+      transform: scale(1.15);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* ========== Floating Color Button ========== */
+    #color-button {
+      position: fixed;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      z-index: var(--z-floating);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s;
+    }
+
+    #color-button:hover {
+      background: var(--border);
+    }
+
+    #color-button[hidden] {
+      display: none;
+    }
+
+    #color-button svg {
+      width: 13px;
+      height: 13px;
+      color: var(--sky);
+    }
+
+    /* ========== Keyboard Shortcuts ========== */
+    .shortcuts-hint {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+
+    .canvas:hover .shortcuts-hint {
+      opacity: 1;
+    }
+
+    .shortcut-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 3px 6px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 10px;
+      border-radius: 4px;
+    }
+
+    .shortcut-badge kbd {
+      padding: 1px 3px;
+      background: var(--surface);
+      border-radius: 3px;
+      font-family: inherit;
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    /* ========== Image Insert (injected into iframe) ========== */
+    /* These styles are injected dynamically into the iframe */
+
+    /* ========== Reduced Motion ========== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ========== Responsive ========== */
+    @media (max-width: 768px) {
+      .header {
+        padding: 0 10px;
+        height: 48px;
+        gap: 6px;
+      }
+
+      .logo-text { display: none; }
+      .file-name { max-width: 80px; }
+      .btn span { display: none; }
+      .toggle-label { display: none; }
+      .canvas-wrapper { padding: 6px; }
+
+      #color-panel {
+        width: calc(100vw - 12px);
+        left: 6px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">M</div>
+        <span class="logo-text">MyHtml</span>
+        <span style="font-size:10px;color:var(--text-muted);opacity:0.4;margin-left:6px;letter-spacing:0.5px;white-space:nowrap">product by bin · newjeans never die</span>
+      </div>
+
+      <div class="header-divider"></div>
+
+      <button class="btn btn-primary" id="btn-open">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span>打开</span>
+      </button>
+      <input type="file" id="file-input" accept=".html,.htm" hidden>
+
+      <div class="file-info">
+        <span class="file-name" id="file-name"></span>
+        <div class="status-pill" id="status-pill">
+          <span class="status-dot"></span>
+          <span id="status-text"></span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Undo/Redo -->
+        <div class="btn-group">
+          <button class="btn btn-icon" id="btn-undo" disabled title="撤销 (Ctrl+Z)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+          </button>
+          <button class="btn btn-icon" id="btn-redo" disabled title="重做 (Ctrl+Shift+Z)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+          </button>
+        </div>
+
+        <label class="toggle-group" id="toggle-edit-group">
+          <input type="checkbox" id="toggle-edit" disabled>
+          <div class="toggle-track">
+            <div class="toggle-thumb"></div>
+          </div>
+          <span class="toggle-label">编辑</span>
+        </label>
+
+        <button class="btn btn-icon" id="btn-insert-img" disabled title="插入图片">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+        </button>
+        <input type="file" id="img-input" accept="image/*" hidden>
+
+        <div class="header-divider"></div>
+
+        <button class="btn btn-icon" id="btn-save" disabled title="保存 (Ctrl+S)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Canvas -->
+    <main class="canvas-wrapper">
+      <div class="canvas" id="canvas">
+        <div class="placeholder" id="placeholder">
+          <div class="placeholder-icon">📄</div>
+          <div class="placeholder-title">打开 HTML 文件开始编辑</div>
+          <div class="placeholder-subtitle">
+            点击「打开」按钮或直接拖拽 HTML 文件到此处
+          </div>
+          <div class="placeholder-hint">
+            支持 .html / .htm 格式
+          </div>
+        </div>
+
+        <iframe id="viewer" sandbox="allow-same-origin allow-scripts"></iframe>
+
+        <div class="shortcuts-hint">
+          <div class="shortcut-badge"><kbd>Ctrl</kbd>+<kbd>S</kbd> 保存</div>
+          <div class="shortcut-badge"><kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销</div>
+          <div class="shortcut-badge"><kbd>Esc</kbd> 关闭</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Overlays -->
+  <div id="hover-overlay" class="overlay"></div>
+  <div id="selected-overlay" class="overlay"></div>
+
+  <!-- Floating Color Button -->
+  <button id="color-button" hidden title="修改颜色">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="13.5" cy="6.5" r="2.5"></circle>
+      <circle cx="17.5" cy="10.5" r="2.5"></circle>
+      <circle cx="8.5" cy="7.5" r="2.5"></circle>
+      <circle cx="6.5" cy="12.5" r="2.5"></circle>
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path>
+    </svg>
+  </button>
+
+  <!-- Color Panel -->
+  <div id="color-panel" hidden>
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">颜色编辑</div>
+        <div class="element-tag" id="el-tag"></div>
+      </div>
+      <button class="panel-close" id="panel-close" title="关闭 (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-label">背景颜色</div>
+      <div class="color-input-group">
+        <input type="color" class="color-swatch-input" id="bg-color" value="#ffffff">
+        <input type="text" class="color-text-input" id="bg-color-text" value="#ffffff" maxlength="7" spellcheck="false" placeholder="#ffffff">
+        <button class="btn-clear" data-clear="backgroundColor">清除</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-label">文字颜色</div>
+      <div class="color-input-group">
+        <input type="color" class="color-swatch-input" id="text-color" value="#000000">
+        <input type="text" class="color-text-input" id="text-color-text" value="#000000" maxlength="7" spellcheck="false" placeholder="#000000">
+        <button class="btn-clear" data-clear="color">清除</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-label">快捷调色板</div>
+      <div class="preset-colors" id="preset-colors"></div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // ==================== State ====================
+    const state = {
+      originalHTML: '',
+      currentFileName: '',
+      isEditMode: false,
+      allowScripts: true,
+      selectedElement: null,
+      hoveredElement: null,
+      iframeReady: false,
+      isDirty: false,
+      isSaving: false,
+      undoStack: [],
+      redoStack: [],
+      maxHistory: 50,
+      isUndoRedo: false,
+      lastFocusedColor: 'bg', // 'bg' or 'text'
+    };
+
+    // ==================== DOM References ====================
+    const $ = id => document.getElementById(id);
+    const fileInput = $('file-input');
+    const btnOpen = $('btn-open');
+    const btnSave = $('btn-save');
+    const btnUndo = $('btn-undo');
+    const btnRedo = $('btn-redo');
+    const toggleEdit = $('toggle-edit');
+    const toggleEditGroup = $('toggle-edit-group');
+    const fileName = $('file-name');
+    const statusPill = $('status-pill');
+    const statusText = $('status-text');
+    const placeholder = $('placeholder');
+    const viewer = $('viewer');
+    const canvas = $('canvas');
+    const hoverOverlay = $('hover-overlay');
+    const selectedOverlay = $('selected-overlay');
+    const colorPanel = $('color-panel');
+    const elTag = $('el-tag');
+    const bgColor = $('bg-color');
+    const bgColorText = $('bg-color-text');
+    const textColor = $('text-color');
+    const textColorText = $('text-color-text');
+    const presetColors = $('preset-colors');
+    const panelClose = $('panel-close');
+    const colorButton = $('color-button');
+    const btnInsertImg = $('btn-insert-img');
+    const imgInput = $('img-input');
+
+    // ==================== Preset Colors ====================
+    const SWATCH_COLORS = [
+      '#ffffff', '#f8fafc', '#f1f5f9', '#e2e8f0',
+      '#000000', '#1e293b', '#334155', '#475569',
+      '#ef4444', '#f97316', '#eab308', '#22c55e',
+      '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899',
+      '#dc2626', '#ea580c', '#ca8a04', '#16a34a',
+      '#2563eb', '#4f46e5', '#7c3aed', '#db2777',
+      '#fee2e2', '#ffedd5', '#fef9c3', '#dcfce7',
+      '#dbeafe', '#e0e7ff', '#f3e8ff', '#fce7f3',
+    ];
+
+    // ==================== Initialize ====================
+    function init() {
+      initPresetColors();
+      bindEvents();
+    }
+
+    function initPresetColors() {
+      // Track which color section the user last interacted with
+      [bgColor, bgColorText].forEach(el => {
+        el.addEventListener('focus', () => { state.lastFocusedColor = 'bg'; });
+      });
+      [textColor, textColorText].forEach(el => {
+        el.addEventListener('focus', () => { state.lastFocusedColor = 'text'; });
+      });
+
+      SWATCH_COLORS.forEach(color => {
+        const btn = document.createElement('button');
+        btn.className = 'preset-color';
+        btn.style.backgroundColor = color;
+        btn.dataset.color = color;
+        btn.title = color;
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const prop = state.lastFocusedColor === 'text' ? 'color' : 'backgroundColor';
+          applyColor(prop, color);
+        });
+        presetColors.appendChild(btn);
+      });
+    }
+
+    // ==================== Event Binding ====================
+    function bindEvents() {
+      btnOpen.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', handleFileSelect);
+      btnSave.addEventListener('click', saveFile);
+      btnUndo.addEventListener('click', undo);
+      btnRedo.addEventListener('click', redo);
+
+      document.addEventListener('dragover', handleDragOver);
+      document.addEventListener('dragleave', handleDragLeave);
+      document.addEventListener('drop', handleDrop);
+
+      toggleEdit.addEventListener('change', handleToggleEdit);
+
+      btnInsertImg.addEventListener('click', () => imgInput.click());
+      imgInput.addEventListener('change', handleImgSelect);
+
+      bgColor.addEventListener('input', handleBgColorInput);
+      bgColorText.addEventListener('input', handleBgColorTextInput);
+      textColor.addEventListener('input', handleTextColorInput);
+      textColorText.addEventListener('input', handleTextColorTextInput);
+      document.querySelectorAll('.btn-clear').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          applyColor(btn.dataset.clear, '');
+        });
+      });
+      panelClose.addEventListener('click', hideColorPanel);
+
+      colorButton.addEventListener('mouseenter', handleColorButtonMouseEnter);
+      colorButton.addEventListener('mouseleave', handleColorButtonMouseLeave);
+      colorButton.addEventListener('click', handleColorButtonClick);
+
+      document.addEventListener('keydown', handleKeyDown);
+
+      // Wheel on the outer canvas (when mouse is over canvas but not iframe)
+      canvas.addEventListener('wheel', handleOuterWheel, { passive: false });
+
+      viewer.addEventListener('load', handleViewerLoad);
+    }
+
+    // ==================== Scroll (wheel + arrow keys) ====================
+    function scrollPage(direction) {
+      if (!state.iframeReady) return;
+      const win = viewer.contentWindow;
+      if (!win) return;
+      const step = 150;
+      // Use contentWindow.scrollBy to bypass contentEditable's caret-scroll management
+      requestAnimationFrame(() => {
+        switch (direction) {
+          case 'up':    win.scrollBy(0, -step); break;
+          case 'down':  win.scrollBy(0, step);  break;
+          case 'left':  win.scrollBy(-step, 0); break;
+          case 'right': win.scrollBy(step, 0);  break;
+        }
+      });
+    }
+
+    // Outer canvas wheel → scroll iframe
+    function handleOuterWheel(e) {
+      if (!state.iframeReady) return;
+      e.preventDefault();
+      const win = viewer.contentWindow;
+      if (win) requestAnimationFrame(() => win.scrollBy(0, e.deltaY));
+    }
+
+    // Bind wheel + arrow keys inside iframe document
+    let _iframeWheel = null;
+    let _iframeKey = null;
+
+    function bindIframeScrollEvents() {
+      if (!state.iframeReady) return;
+      const doc = viewer.contentDocument;
+      if (!doc) return;
+
+      // Cleanup previous
+      if (_iframeWheel) doc.removeEventListener('wheel', _iframeWheel);
+      if (_iframeKey) doc.removeEventListener('keydown', _iframeKey);
+
+      _iframeWheel = function(e) {
+        e.preventDefault();
+        const win = doc.defaultView;
+        if (win) requestAnimationFrame(() => win.scrollBy(0, e.deltaY));
+      };
+      doc.addEventListener('wheel', _iframeWheel, { passive: false });
+
+      _iframeKey = function(e) {
+        const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+        if (map[e.key] && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+          if (state.isEditMode) {
+            const sel = doc.getSelection();
+            if (sel && sel.rangeCount) {
+              const node = sel.getRangeAt(0).startContainer;
+              // Only let browser handle cursor if we're in a text node WITH actual content
+              if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0) return;
+            }
+          }
+          e.preventDefault();
+          scrollPage(map[e.key]);
+        }
+      };
+      doc.addEventListener('keydown', _iframeKey, true);
+    }
+
+    // ==================== Undo / Redo ====================
+    function captureState() {
+      if (state.isUndoRedo) return;
+      const doc = viewer.contentDocument;
+      if (!doc) return;
+      const html = doc.documentElement.outerHTML;
+      const scrollX = doc.documentElement.scrollLeft || (doc.body && doc.body.scrollLeft) || 0;
+      const scrollY = doc.documentElement.scrollTop || (doc.body && doc.body.scrollTop) || 0;
+      state.undoStack.push({ html, scrollX, scrollY });
+      if (state.undoStack.length > state.maxHistory) state.undoStack.shift();
+      state.redoStack = [];
+      updateUndoRedoButtons();
+    }
+
+    function undo() {
+      if (state.undoStack.length === 0) return;
+      const doc = viewer.contentDocument;
+      if (!doc) return;
+      const cur = doc.documentElement.outerHTML;
+      const sx = doc.documentElement.scrollLeft || (doc.body && doc.body.scrollLeft) || 0;
+      const sy = doc.documentElement.scrollTop || (doc.body && doc.body.scrollTop) || 0;
+      state.redoStack.push({ html: cur, scrollX: sx, scrollY: sy });
+      applyStateToDOM(state.undoStack.pop());
+      setDirty(state.undoStack.length > 0);
+      updateUndoRedoButtons();
+    }
+
+    function redo() {
+      if (state.redoStack.length === 0) return;
+      const doc = viewer.contentDocument;
+      if (!doc) return;
+      const cur = doc.documentElement.outerHTML;
+      const sx = doc.documentElement.scrollLeft || (doc.body && doc.body.scrollLeft) || 0;
+      const sy = doc.documentElement.scrollTop || (doc.body && doc.body.scrollTop) || 0;
+      state.undoStack.push({ html: cur, scrollX: sx, scrollY: sy });
+      applyStateToDOM(state.redoStack.pop());
+      setDirty(true);
+      updateUndoRedoButtons();
+    }
+
+    function applyStateToDOM(s) {
+      const doc = viewer.contentDocument;
+      if (!doc) return;
+      state.isUndoRedo = true;
+      const wasEditMode = state.isEditMode;
+      unbindEditModeEvents();
+
+      const parsed = new DOMParser().parseFromString(s.html, 'text/html');
+      doc.documentElement.innerHTML = parsed.documentElement.innerHTML;
+
+      // Restore scroll
+      if (doc.documentElement) { doc.documentElement.scrollLeft = s.scrollX; doc.documentElement.scrollTop = s.scrollY; }
+      if (doc.body) { doc.body.scrollLeft = s.scrollX; doc.body.scrollTop = s.scrollY; }
+
+      setTimeout(() => bindIframeScrollEvents(), 10);
+
+      if (wasEditMode) {
+        doc.body.contentEditable = 'plaintext-only';
+        bindEditModeEvents();
+      }
+
+      state.selectedElement = null;
+      state.hoveredElement = null;
+      selectedOverlay.classList.remove('visible');
+      hoverOverlay.classList.remove('visible');
+      hideColorPanel();
+      hideColorButtonNow();
+      state.isUndoRedo = false;
+    }
+
+    function updateUndoRedoButtons() {
+      btnUndo.disabled = state.undoStack.length === 0 || !state.iframeReady;
+      btnRedo.disabled = state.redoStack.length === 0 || !state.iframeReady;
+    }
+
+    // ==================== File Handling ====================
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) loadFile(file);
+      fileInput.value = '';
+    }
+
+    function loadFile(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        state.originalHTML = e.target.result;
+        state.currentFileName = file.name;
+        fileName.textContent = file.name;
+        state.undoStack = [];
+        state.redoStack = [];
+        enableControls();
+        setDirty(false);
+        loadIntoIframe(state.originalHTML);
+      };
+      reader.onerror = () => alert('读取文件失败: ' + file.name);
+      reader.readAsText(file, 'utf-8');
+    }
+
+    function enableControls() {
+      btnSave.disabled = false;
+      toggleEdit.disabled = false;
+      btnInsertImg.disabled = false;
+      updateUndoRedoButtons();
+    }
+
+    // ==================== Drag & Drop ====================
+    function handleDragOver(e) { e.preventDefault(); canvas.classList.add('drag-over'); }
+    function handleDragLeave(e) { if (!e.relatedTarget) canvas.classList.remove('drag-over'); }
+    function handleDrop(e) {
+      e.preventDefault();
+      canvas.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file && /\.html?$/i.test(file.name)) loadFile(file);
+      else if (file) alert('请拖入 .html 或 .htm 文件');
+    }
+
+    // ==================== Iframe Management ====================
+    function loadIntoIframe(html) {
+      unbindEditModeEvents();
+      selectedImgWrapper = null;
+      if (state.isEditMode && !state.isUndoRedo) {
+        state.isEditMode = false;
+        toggleEdit.checked = false;
+        toggleEditGroup.classList.remove('active');
+      }
+      hideColorPanel();
+      state.iframeReady = false;
+      viewer.setAttribute('sandbox', 'allow-same-origin allow-scripts');
+      viewer.srcdoc = html;
+      viewer.classList.add('loaded');
+      placeholder.style.display = 'none';
+    }
+
+    function handleViewerLoad() {
+      if (viewer.srcdoc) {
+        state.iframeReady = true;
+        updateUndoRedoButtons();
+        bindIframeScrollEvents();
+        if (state.isEditMode) bindEditModeEvents();
+      }
+    }
+
+    function getCurrentPreviewHTML() {
+      const doc = viewer.contentDocument;
+      if (!doc) return state.originalHTML;
+      const clone = doc.documentElement.cloneNode(true);
+      const clonedBody = clone.querySelector('body');
+      if (clonedBody) { clonedBody.removeAttribute('contenteditable'); clonedBody.style.cursor = ''; }
+      let html = clone.outerHTML;
+      if (!/^<!DOCTYPE/i.test(html)) html = '<!DOCTYPE html>\n' + html;
+      return html;
+    }
+
+    // ==================== Toggle Handlers ====================
+    function handleToggleEdit() {
+      if (!state.iframeReady) { toggleEdit.checked = false; return; }
+      state.isEditMode = toggleEdit.checked;
+      toggleEditGroup.classList.toggle('active', state.isEditMode);
+      if (state.isEditMode) enableEditMode(); else disableEditMode();
+    }
+
+    // ==================== Edit Mode ====================
+    function enableEditMode() {
+      const doc = viewer.contentDocument;
+      if (!doc) return;
+      doc.body.contentEditable = 'plaintext-only';
+      bindEditModeEvents();
+    }
+
+    function disableEditMode() {
+      const doc = viewer.contentDocument;
+      if (!doc) return;
+      doc.body.removeAttribute('contenteditable');
+      doc.body.contentEditable = 'inherit';
+      unbindEditModeEvents();
+      hideColorPanel();
+      hoverOverlay.classList.remove('visible');
+      hideColorButtonNow();
+    }
+
+    // ==================== Edit Mode Events ====================
+    let boundHandlers = null;
+
+    function bindEditModeEvents() {
+      const doc = viewer.contentDocument;
+      if (!doc) return;
+      unbindEditModeEvents();
+
+      const hMouseMove = (e) => {
+        if (!state.isEditMode) return;
+        if (state.selectedElement) { hoverOverlay.classList.remove('visible'); hideColorButton(); return; }
+        const el = e.target;
+        if (!isValidElement(el)) { hoverOverlay.classList.remove('visible'); hideColorButton(); return; }
+        state.hoveredElement = el;
+        updateOverlayPosition(hoverOverlay, el);
+        hoverOverlay.classList.add('visible');
+        showColorButton(el);
+      };
+      const hMouseLeave = () => { hoverOverlay.classList.remove('visible'); hideColorButton(); };
+      const hMouseDown = (e) => {
+        if (!state.isEditMode) return;
+        if (isPointInText(e.clientX, e.clientY)) { e.stopPropagation(); return; }
+        if (!isValidElement(e.target)) return;
+        e.preventDefault(); e.stopPropagation();
+      };
+      const hClick = (e) => {
+        if (!state.isEditMode) return;
+        const el = e.target;
+        if (el === doc.body || el === doc.documentElement) { hideColorPanel(); return; }
+        if (isPointInText(e.clientX, e.clientY)) { e.stopPropagation(); return; }
+        if (!isValidElement(el)) { hideColorPanel(); return; }
+        e.preventDefault(); e.stopPropagation();
+        showColorPanel(el);
+      };
+      const hKeyDown = (e) => {
+        if (state.isEditMode) {
+          // Don't block arrow keys - let them reach the scroll handler (_iframeKey)
+          if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) return;
+          e.stopPropagation();
+        }
+        if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+        const sel = doc.getSelection();
+        if (!sel || !sel.isCollapsed || !sel.rangeCount) { e.preventDefault(); return; }
+        const range = sel.getRangeAt(0);
+        const node = range.startContainer;
+        if (node.nodeType !== Node.TEXT_NODE) { e.preventDefault(); return; }
+        if (e.key === 'Backspace' && range.startOffset === 0) {
+          const p = node.parentNode;
+          if (p && p.textContent.trim() === '' && p.children.length === 0 && p !== doc.body) e.preventDefault();
+        } else if (e.key === 'Delete' && range.startOffset === node.textContent.length) {
+          e.preventDefault();
+        }
+      };
+      const hBeforeInput = (e) => {
+        if (!state.isEditMode) return;
+        e.stopPropagation();
+        const t = e.inputType || '';
+        if (['insertParagraph','insertLineBreak','insertOrderedList','insertUnorderedList','insertHorizontalRule','formatBold','formatItalic','formatUnderline','formatStrikeThrough'].includes(t) || t.startsWith('format')) { e.preventDefault(); return; }
+        if (t === 'insertFromPaste' || t === 'insertFromDrop' || t === 'insertHTML') { e.preventDefault(); return; }
+        if (t.startsWith('delete') || t === 'insertText') {
+          if (!isSafeTextSelection(doc, t)) { e.preventDefault(); return; }
+          captureState();
+        }
+      };
+      const hInput = () => { setDirty(true); refreshFloatingUI(); };
+      const hPaste = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+        if (text && isSafeTextSelection(doc, 'insertText')) { captureState(); doc.execCommand('insertText', false, text); setDirty(true); refreshFloatingUI(); }
+      };
+      const hDrop = (e) => e.preventDefault();
+      const hDragOver = (e) => e.preventDefault();
+      const hScrollOrResize = () => refreshFloatingUI();
+
+      doc.addEventListener('mousemove', hMouseMove, true);
+      doc.addEventListener('mouseleave', hMouseLeave, true);
+      doc.addEventListener('mousedown', hMouseDown, true);
+      doc.addEventListener('click', hClick, true);
+      doc.addEventListener('keydown', hKeyDown, true);
+      doc.addEventListener('beforeinput', hBeforeInput, true);
+      doc.addEventListener('input', hInput, true);
+      doc.addEventListener('paste', hPaste, true);
+      doc.addEventListener('drop', hDrop, true);
+      doc.addEventListener('dragover', hDragOver, true);
+      doc.addEventListener('scroll', hScrollOrResize, true);
+      window.addEventListener('resize', hScrollOrResize);
+
+      boundHandlers = { hMouseMove, hMouseLeave, hMouseDown, hClick, hKeyDown, hBeforeInput, hInput, hPaste, hDrop, hDragOver, hScrollOrResize };
+    }
+
+    function unbindEditModeEvents() {
+      const doc = viewer.contentDocument;
+      if (!doc || !boundHandlers) return;
+      const f = boundHandlers;
+      doc.removeEventListener('mousemove', f.hMouseMove, true);
+      doc.removeEventListener('mouseleave', f.hMouseLeave, true);
+      doc.removeEventListener('mousedown', f.hMouseDown, true);
+      doc.removeEventListener('click', f.hClick, true);
+      doc.removeEventListener('keydown', f.hKeyDown, true);
+      doc.removeEventListener('beforeinput', f.hBeforeInput, true);
+      doc.removeEventListener('input', f.hInput, true);
+      doc.removeEventListener('paste', f.hPaste, true);
+      doc.removeEventListener('drop', f.hDrop, true);
+      doc.removeEventListener('dragover', f.hDragOver, true);
+      doc.removeEventListener('scroll', f.hScrollOrResize, true);
+      window.removeEventListener('resize', f.hScrollOrResize);
+      boundHandlers = null;
+    }
+
+    // ==================== Utilities ====================
+    function isSafeTextSelection(doc, inputType) {
+      const sel = doc.getSelection();
+      if (!sel || !sel.rangeCount) return false;
+      const range = sel.getRangeAt(0);
+      const start = range.startContainer, end = range.endContainer;
+      if (start.nodeType !== Node.TEXT_NODE || end.nodeType !== Node.TEXT_NODE || start !== end) return false;
+      if (!range.collapsed) return true;
+      const tl = start.textContent.length;
+      if (inputType === 'deleteContentBackward') return range.startOffset > 0;
+      if (inputType === 'deleteContentForward') return range.startOffset < tl;
+      if (inputType.startsWith('delete')) return false;
+      return true;
+    }
+
+    function isValidElement(el) {
+      if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
+      const tag = el.tagName.toLowerCase();
+      if (['html','head','body','meta','link','script','style','title','br','hr','noscript'].includes(tag)) return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    }
+
+    function isPointInText(x, y) {
+      const doc = viewer.contentDocument;
+      if (!doc) return false;
+      if (typeof doc.caretPositionFromPoint === 'function') {
+        const pos = doc.caretPositionFromPoint(x, y);
+        return !!(pos && pos.offsetNode && pos.offsetNode.nodeType === Node.TEXT_NODE);
+      }
+      if (typeof doc.caretRangeFromPoint === 'function') {
+        const range = doc.caretRangeFromPoint(x, y);
+        return !!(range && range.startContainer && range.startContainer.nodeType === Node.TEXT_NODE);
+      }
+      return false;
+    }
+
+    // ==================== Overlay & UI ====================
+    function updateOverlayPosition(overlay, el) {
+      const r = el.getBoundingClientRect();
+      const ir = viewer.getBoundingClientRect();
+      overlay.style.left = (r.left + ir.left) + 'px';
+      overlay.style.top = (r.top + ir.top) + 'px';
+      overlay.style.width = r.width + 'px';
+      overlay.style.height = r.height + 'px';
+    }
+
+    function refreshFloatingUI() {
+      if (state.selectedElement && isValidElement(state.selectedElement)) {
+        updateOverlayPosition(selectedOverlay, state.selectedElement);
+      } else { selectedOverlay.classList.remove('visible'); }
+      if (state.hoveredElement && isValidElement(state.hoveredElement) && !state.selectedElement) {
+        updateOverlayPosition(hoverOverlay, state.hoveredElement);
+        showColorButton(state.hoveredElement);
+      } else { hoverOverlay.classList.remove('visible'); }
+    }
+
+    // ==================== Floating Color Button ====================
+    let hideButtonTimer = null;
+    const BTN_SIZE = 28;
+
+    function showColorButton(el) {
+      if (hideButtonTimer) { clearTimeout(hideButtonTimer); hideButtonTimer = null; }
+      const r = el.getBoundingClientRect();
+      const ir = viewer.getBoundingClientRect();
+      const left = r.right + ir.left - BTN_SIZE + 4;
+      const top = r.top + ir.top - 4;
+      colorButton.style.left = Math.max(4, Math.min(window.innerWidth - BTN_SIZE - 4, left)) + 'px';
+      colorButton.style.top = Math.max(4, Math.min(window.innerHeight - BTN_SIZE - 4, top)) + 'px';
+      colorButton.hidden = false;
+    }
+
+    function hideColorButton() {
+      if (hideButtonTimer) clearTimeout(hideButtonTimer);
+      hideButtonTimer = setTimeout(() => { colorButton.hidden = true; state.hoveredElement = null; hideButtonTimer = null; }, 100);
+    }
+
+    function hideColorButtonNow() {
+      if (hideButtonTimer) { clearTimeout(hideButtonTimer); hideButtonTimer = null; }
+      colorButton.hidden = true; state.hoveredElement = null;
+    }
+
+    function handleColorButtonMouseEnter() { if (hideButtonTimer) { clearTimeout(hideButtonTimer); hideButtonTimer = null; } }
+    function handleColorButtonMouseLeave() { hideColorButton(); }
+    function handleColorButtonClick(e) {
+      e.stopPropagation(); e.preventDefault();
+      if (state.hoveredElement) { const el = state.hoveredElement; hideColorButtonNow(); showColorPanel(el); }
+    }
+
+    // ==================== Color Panel ====================
+    function showColorPanel(el) {
+      captureState();
+      state.selectedElement = el;
+      hoverOverlay.classList.remove('visible');
+      updateOverlayPosition(selectedOverlay, el);
+      selectedOverlay.classList.add('visible');
+
+      const win = viewer.contentWindow;
+      const computed = win.getComputedStyle(el);
+      elTag.textContent = describeElement(el);
+      elTag.title = describeElement(el);
+
+      const bgHex = rgbToHex(computed.backgroundColor) || '#ffffff';
+      const textHex = rgbToHex(computed.color) || '#000000';
+      bgColor.value = bgHex; bgColorText.value = bgHex;
+      textColor.value = textHex; textColorText.value = textHex;
+
+      const r = el.getBoundingClientRect();
+      const ir = viewer.getBoundingClientRect();
+      let top = r.bottom + ir.top + 12;
+      let left = r.left + ir.left;
+      if (top + 380 > window.innerHeight - 12) top = r.top + ir.top - 392;
+      if (left + 280 > window.innerWidth - 12) left = window.innerWidth - 292;
+      colorPanel.style.top = Math.max(12, top) + 'px';
+      colorPanel.style.left = Math.max(12, left) + 'px';
+      colorPanel.hidden = false;
+    }
+
+    function hideColorPanel() { colorPanel.hidden = true; selectedOverlay.classList.remove('visible'); state.selectedElement = null; }
+
+    function describeElement(el) {
+      let d = el.tagName.toLowerCase();
+      if (el.id) d += '#' + el.id;
+      if (el.className && typeof el.className === 'string') {
+        const c = el.className.trim().split(/\s+/).slice(0, 2).join('.');
+        if (c) d += '.' + c;
+      }
+      return d;
+    }
+
+    // ==================== Color Handlers ====================
+    function handleBgColorInput(e) { bgColorText.value = e.target.value; applyColor('backgroundColor', e.target.value); }
+    function handleBgColorTextInput(e) { const n = normalizeHex(e.target.value); if (n) { bgColor.value = n; applyColor('backgroundColor', n); } }
+    function handleTextColorInput(e) { textColorText.value = e.target.value; applyColor('color', e.target.value); }
+    function handleTextColorTextInput(e) { const n = normalizeHex(e.target.value); if (n) { textColor.value = n; applyColor('color', n); } }
+
+    function applyColor(prop, value) {
+      if (!state.selectedElement) return;
+      const before = state.selectedElement.style[prop];
+      state.selectedElement.style[prop] = value || '';
+      if (state.selectedElement.style[prop] !== before) setDirty(true);
+      const computed = viewer.contentWindow.getComputedStyle(state.selectedElement);
+      if (prop === 'backgroundColor') { const h = rgbToHex(computed.backgroundColor) || '#ffffff'; bgColor.value = h; bgColorText.value = h; }
+      else if (prop === 'color') { const h = rgbToHex(computed.color) || '#000000'; textColor.value = h; textColorText.value = h; }
+    }
+
+    // ==================== Color Utilities ====================
+    function rgbToHex(rgb) {
+      if (!rgb || rgb === 'transparent' || rgb === 'rgba(0, 0, 0, 0)') return null;
+      const m = rgb.match(/rgba?\(([^)]+)\)/);
+      if (!m) return rgb.startsWith('#') ? (rgb.length === 4 ? expandShortHex(rgb) : rgb.toLowerCase()) : null;
+      const p = m[1].split(',').map(s => parseInt(s.trim(), 10));
+      if (p.length < 3 || p.some(isNaN)) return null;
+      return '#' + p.slice(0, 3).map(n => Math.max(0, Math.min(255, n)).toString(16).padStart(2, '0')).join('');
+    }
+    function expandShortHex(hex) { return '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3]; }
+    function normalizeHex(v) {
+      if (!v) return null; v = v.trim();
+      if (!v.startsWith('#')) v = '#' + v;
+      if (/^#[0-9a-fA-F]{3}$/.test(v)) return expandShortHex(v.toLowerCase());
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) return v.toLowerCase();
+      return null;
+    }
+
+    // ==================== Dirty State ====================
+    function setDirty(d) { state.isDirty = d; updateStatus(); }
+    function updateStatus() {
+      if (!state.currentFileName) { statusPill.classList.remove('modified'); statusText.textContent = ''; return; }
+      statusPill.classList.toggle('modified', state.isDirty);
+      statusText.textContent = state.isDirty ? '已修改' : '未修改';
+    }
+
+    // ==================== Save File ====================
+    async function saveFile() {
+      if (!state.iframeReady || state.isSaving) return;
+      const doc = viewer.contentDocument;
+      if (!doc) return;
+      const prev = btnSave.innerHTML;
+      state.isSaving = true; btnSave.disabled = true;
+      btnSave.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path></svg>';
+      try {
+        const clone = doc.documentElement.cloneNode(true);
+        await inlineLoadedImages(doc, clone);
+        const b = clone.querySelector('body');
+        if (b) { b.removeAttribute('contenteditable'); b.style.cursor = ''; }
+        let html = clone.outerHTML;
+        if (!/^<!DOCTYPE/i.test(html)) html = '<!DOCTYPE html>\n' + html;
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (state.currentFileName.replace(/\.html?$/i, '') || 'untitled') + '-edited.html';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setDirty(false);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } finally { state.isSaving = false; btnSave.disabled = false; btnSave.innerHTML = prev; }
+    }
+
+    // ==================== Image Inlining ====================
+    async function inlineLoadedImages(src, dst) {
+      const sImgs = Array.from(src.querySelectorAll('img'));
+      const dImgs = Array.from(dst.querySelectorAll('img'));
+      await Promise.all(sImgs.map(async (img, i) => {
+        const d = dImgs[i]; if (!d) return;
+        const s = img.currentSrc || img.src || img.getAttribute('src');
+        if (!s || s.startsWith('data:')) return;
+        const du = await imageToDataUrl(img, s);
+        if (du) { d.setAttribute('src', du); d.removeAttribute('srcset'); }
+      }));
+    }
+    async function imageToDataUrl(img, src) {
+      const f = await fetchImageAsDataUrl(src);
+      if (f) return f;
+      if (!img.complete || !img.naturalWidth || !img.naturalHeight) return null;
+      try {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img, 0, 0);
+        return c.toDataURL('image/png');
+      } catch (e) { return null; }
+    }
+    async function fetchImageAsDataUrl(src) {
+      try {
+        const r = await fetch(src); if (!r.ok) return null;
+        return await blobToDataUrl(await r.blob());
+      } catch (e) { return null; }
+    }
+    function blobToDataUrl(blob) {
+      return new Promise(resolve => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = () => resolve(null);
+        r.readAsDataURL(blob);
+      });
+    }
+
+    // ==================== Image Insertion & Manipulation ====================
+    let selectedImgWrapper = null;
+
+    function injectImageStyles(doc) {
+      if (doc.getElementById('myhtml-img-styles')) return;
+      const style = doc.createElement('style');
+      style.id = 'myhtml-img-styles';
+      style.textContent = `
+        .myhtml-img-wrapper {
+          position: absolute;
+          display: inline-block;
+          cursor: move;
+          user-select: none;
+          outline: 2px solid transparent;
+          outline-offset: 2px;
+          transition: outline-color 0.1s;
+          z-index: 50;
+        }
+        .myhtml-img-wrapper:hover { outline-color: rgba(37, 99, 235, 0.4); }
+        .myhtml-img-wrapper.selected { outline-color: #2563eb; }
+        .myhtml-img-wrapper img {
+          display: block;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+        }
+        .myhtml-img-handle {
+          position: absolute;
+          width: 10px;
+          height: 10px;
+          background: #2563eb;
+          border: 1.5px solid white;
+          border-radius: 2px;
+          display: none;
+          z-index: 51;
+        }
+        .myhtml-img-wrapper.selected .myhtml-img-handle { display: block; }
+        .myhtml-img-handle.tl { top: -5px; left: -5px; cursor: nwse-resize; }
+        .myhtml-img-handle.tr { top: -5px; right: -5px; cursor: nesw-resize; }
+        .myhtml-img-handle.bl { bottom: -5px; left: -5px; cursor: nesw-resize; }
+        .myhtml-img-handle.br { bottom: -5px; right: -5px; cursor: nwse-resize; }
+      `;
+      doc.head.appendChild(style);
+    }
+
+    // Find the currently visible slide
+    function findActiveSlide(doc) {
+      // .slide.on pattern (most common presentations)
+      let el = doc.querySelector('.slide.on');
+      if (el) return el;
+      // .slide with opacity 1
+      for (const s of doc.querySelectorAll('.slide, .page, [class*="slide"]')) {
+        if (getComputedStyle(s).opacity > 0.5) return s;
+      }
+      // .active / .current
+      el = doc.querySelector('.active, .current, [data-active="true"]');
+      if (el) return el;
+      return null;
+    }
+
+    function handleImgSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      imgInput.value = '';
+      const doc = viewer.contentDocument;
+      if (!doc || !doc.body) return;
+      captureState();
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        insertImageIntoIframe(doc, ev.target.result);
+        setDirty(true);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function insertImageIntoIframe(doc, src) {
+      injectImageStyles(doc);
+
+      // Find the active slide and insert image INTO it
+      const slide = findActiveSlide(doc);
+      const target = slide || doc.body;
+
+      // Ensure the target is a positioning context
+      if (getComputedStyle(target).position === 'static') {
+        target.style.position = 'relative';
+      }
+
+      const wrapper = doc.createElement('div');
+      wrapper.className = 'myhtml-img-wrapper';
+      wrapper.style.left = '20px';
+      wrapper.style.top = '20px';
+      wrapper.style.width = '200px';
+      wrapper.style.height = 'auto';
+
+      const img = doc.createElement('img');
+      img.src = src;
+      img.onload = () => {
+        if (img.naturalHeight > 0) {
+          wrapper.style.height = Math.round(200 * img.naturalHeight / img.naturalWidth) + 'px';
+        }
+      };
+
+      ['tl', 'tr', 'bl', 'br'].forEach(pos => {
+        const h = doc.createElement('div');
+        h.className = 'myhtml-img-handle ' + pos;
+        wrapper.appendChild(h);
+      });
+      wrapper.appendChild(img);
+
+      // Insert into the slide (not body!) — image inherits slide's opacity/visibility
+      target.appendChild(wrapper);
+
+      selectImage(wrapper, doc);
+      setupImageInteraction(doc);
+    }
+
+    function selectImage(wrapper, doc) {
+      // Deselect previous
+      if (selectedImgWrapper) {
+        selectedImgWrapper.classList.remove('selected');
+      }
+      selectedImgWrapper = wrapper;
+      wrapper.classList.add('selected');
+    }
+
+    function deselectImage() {
+      if (selectedImgWrapper) {
+        selectedImgWrapper.classList.remove('selected');
+        selectedImgWrapper = null;
+      }
+    }
+
+    function setupImageInteraction(doc) {
+      // Prevent duplicate binding
+      if (doc._myhtmlImgBound) return;
+      doc._myhtmlImgBound = true;
+
+      let dragging = false;
+      let resizing = false;
+      let resizeHandle = null;
+      let startX, startY, startLeft, startTop, startW, startH;
+
+      doc.addEventListener('mousedown', (e) => {
+        const wrapper = e.target.closest('.myhtml-img-wrapper');
+        const isHandle = e.target.classList.contains('myhtml-img-handle');
+
+        if (isHandle && wrapper) {
+          // Start resizing
+          e.preventDefault();
+          e.stopPropagation();
+          captureState();
+          resizing = true;
+          resizeHandle = e.target;
+          startX = e.clientX;
+          startY = e.clientY;
+          startLeft = parseInt(wrapper.style.left) || 0;
+          startTop = parseInt(wrapper.style.top) || 0;
+          startW = wrapper.offsetWidth;
+          startH = wrapper.offsetHeight;
+          selectImage(wrapper, doc);
+          return;
+        }
+
+        if (wrapper && !isHandle) {
+          // Start dragging
+          e.preventDefault();
+          e.stopPropagation();
+          captureState();
+          dragging = true;
+          startX = e.clientX;
+          startY = e.clientY;
+          startLeft = parseInt(wrapper.style.left) || 0;
+          startTop = parseInt(wrapper.style.top) || 0;
+          selectImage(wrapper, doc);
+          return;
+        }
+
+        // Click outside any image wrapper → deselect
+        if (!wrapper) {
+          deselectImage();
+        }
+      }, true);
+
+      doc.addEventListener('mousemove', (e) => {
+        if (dragging && selectedImgWrapper) {
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+          selectedImgWrapper.style.left = (startLeft + dx) + 'px';
+          selectedImgWrapper.style.top = (startTop + dy) + 'px';
+          setDirty(true);
+          return;
+        }
+
+        if (resizing && selectedImgWrapper && resizeHandle) {
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+          const cls = resizeHandle.classList;
+          let newW = startW, newH = startH;
+
+          if (cls.contains('br')) {
+            newW = Math.max(30, startW + dx);
+            newH = Math.max(30, startH + dy);
+          } else if (cls.contains('bl')) {
+            newW = Math.max(30, startW - dx);
+            newH = Math.max(30, startH + dy);
+            if (newW > 30) selectedImgWrapper.style.left = (startLeft + dx) + 'px';
+          } else if (cls.contains('tr')) {
+            newW = Math.max(30, startW + dx);
+            newH = Math.max(30, startH - dy);
+            if (newH > 30) selectedImgWrapper.style.top = (startTop + dy) + 'px';
+          } else if (cls.contains('tl')) {
+            newW = Math.max(30, startW - dx);
+            newH = Math.max(30, startH - dy);
+            if (newW > 30) selectedImgWrapper.style.left = (startLeft + dx) + 'px';
+            if (newH > 30) selectedImgWrapper.style.top = (startTop + dy) + 'px';
+          }
+
+          selectedImgWrapper.style.width = newW + 'px';
+          selectedImgWrapper.style.height = newH + 'px';
+          setDirty(true);
+        }
+      }, true);
+
+      doc.addEventListener('mouseup', () => {
+        dragging = false;
+        resizing = false;
+        resizeHandle = null;
+      }, true);
+    }
+
+    // ==================== Keyboard Shortcuts ====================
+    function handleKeyDown(e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.key === 'Escape' && !colorPanel.hidden) { hideColorPanel(); return; }
+      if (e.key === 'Escape' && selectedImgWrapper) { deselectImage(); return; }
+      // Delete selected image with Delete or Backspace (when not in text input)
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedImgWrapper && !state.isEditMode) {
+        e.preventDefault();
+        captureState();
+        selectedImgWrapper.remove();
+        selectedImgWrapper = null;
+        setDirty(true);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); if (!btnSave.disabled) saveFile(); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
+      if ((e.ctrlKey || e.metaKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y')) { e.preventDefault(); redo(); return; }
+
+      // Arrow keys scroll
+      if (e.key === 'ArrowUp') { e.preventDefault(); scrollPage('up'); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); scrollPage('down'); return; }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); scrollPage('left'); return; }
+      if (e.key === 'ArrowRight') { e.preventDefault(); scrollPage('right'); return; }
+
+      // Page Up/Down
+      if (e.key === 'PageUp') { e.preventDefault(); for (let i = 0; i < 3; i++) scrollPage('up'); return; }
+      if (e.key === 'PageDown') { e.preventDefault(); for (let i = 0; i < 3; i++) scrollPage('down'); return; }
+
+      // Ctrl+Home / Ctrl+End
+      if (e.key === 'Home' && e.ctrlKey) {
+        e.preventDefault();
+        const doc = viewer.contentDocument;
+        if (doc) { if (doc.documentElement) doc.documentElement.scrollTop = 0; if (doc.body) doc.body.scrollTop = 0; }
+        return;
+      }
+      if (e.key === 'End' && e.ctrlKey) {
+        e.preventDefault();
+        const doc = viewer.contentDocument;
+        if (doc) {
+          const max = doc.documentElement ? doc.documentElement.scrollHeight : 0;
+          if (doc.documentElement) doc.documentElement.scrollTop = max;
+          if (doc.body) doc.body.scrollTop = max;
+        }
+        return;
+      }
+    }
+
+    // ==================== Initialize ====================
+    init();
+  })();
+  </script>
+</body>
+</html>
